@@ -1,0 +1,161 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html, body{
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  /* https://stackoverflow.com/questions/18061308/prevent-address-bar-hiding-in-mobile-browsers */
+  position:fixed; /* prevent overscroll bounce*/
+  overflow:hidden;
+  -webkit-overflow-scrolling: touch; /* iOS velocity scrolling */
+
+}
+
+li {
+  list-style: none;
+}
+
+.highlight {
+  display: block;
+}
+
+.zone {
+  display: block;
+  position: absolute;
+  width: 50%;
+  height: 70%;
+  left: 0;
+  top: 30%;
+}
+
+.zone > h1 {
+  position: absolute;
+  padding: 10px 10px;
+  margin: 0;
+  color: white;
+  right: 0;
+  bottom: 0;
+}
+.zone.static {
+  background: rgba(9, 132, 227, 0.1);
+}
+
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: #ecf0f1;
+}
+
+#platform {
+  height: 15%;
+  width: 100%;
+  background-color: #2c3e50;
+  color:#ecf0f1;
+  font-size: 5vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#tag {
+  height: 15%;
+  width: 100%;
+}
+
+#tag ul, #control ul{
+  height: 100%;
+  width: 100%;
+}
+
+#tag ul {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#zone_joystick {
+  display: block;
+  font-size: 1.5vw;
+}
+
+#tag ul li, #control ul li {
+  height: 100%;
+  width: 50%;
+}
+
+#tag ul li {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 5vw;
+}
+
+#tag ul li:first-child {
+  color:#ecf0f1;
+  background-color: #3498db;
+}
+
+#tag ul li:last-child {
+  color:#ecf0f1;
+  background-color: #2980b9;
+}
+
+#control {
+  display: flex;
+  height: 70%;
+  width: 100%;
+  /* background-color: #e67e22; */
+}
+
+#speedBar {
+  display:flex;
+  z-index: 1;
+  flex-direction: column;
+}
+
+#speedBar i {
+  height: 50%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  font-size: 15vw;
+  color: white;
+  background-color: rgba(84, 160, 255,1.0);
+  opacity: 0.4;
+}
+
+#speedBar i:first-child {
+  background-color: rgba(10, 189, 227,1.0);
+}
+
+#speedBar i.active {
+  opacity: 1;
+}
+
+#processBar {
+  width: 100%;
+  background-color: rgba(108, 92, 231,.7);
+  align-self: flex-end;
+}
+#processText {
+  position: absolute;
+  left: 70%;
+  top: 60%;
+  font-size: 5vw;
+}
+
+#debug {
+  position: absolute;
+  left: 35%;
+  width: 350px;
+  font-size: calc((0.6vmin) + (1vmax));
+}
