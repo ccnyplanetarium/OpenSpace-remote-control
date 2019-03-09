@@ -47,7 +47,7 @@ var planetList = [
 for(let i = 0; i<planet.length; i++) {
   planet[i].onclick = function(){
 
-    socket.emit('chat message', planetList[i-1]); //the trigger is incorrect.. so need -1
+    socket.emit('change planet', planetList[i-1]); //the trigger is incorrect.. so need -1
 
   };
 }
@@ -74,9 +74,10 @@ var main = document.getElementById('main');
 var root = document.getElementById('root');
 setTimeout(
   function(){
+    keyboard.style.display = ''
     root.style.display = 'none';
     root.style.visibility = 'visible';
-  },1000
+  },2000
 )
 
 
@@ -139,15 +140,15 @@ del.onclick = function() {
 }
 
 
-var speaker = document.getElementById("speaker");
-speaker.onclick = function() {
-  speaker.classList.add('active')
-  setTimeout(
-    function() {
-      speaker.classList.remove('active')
-    }
-    ,3000);
-  }
+// var speaker = document.getElementById("speaker");
+// speaker.onclick = function() {
+//   speaker.classList.add('active')
+//   setTimeout(
+//     function() {
+//       speaker.classList.remove('active')
+//     }
+//     ,3000);
+//   }
 
   var dnload = document.getElementById("download");
 
