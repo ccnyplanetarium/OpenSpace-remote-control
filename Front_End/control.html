@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<title>OpenSpace Remote Control</title>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+
+  <link rel="stylesheet" href="lib/fontawesome.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+
+  <!-- Swiper.js -->
+  <!-- http://idangero.us/swiper/get-started/ -->
+  <!-- <link rel="stylesheet" href="lib/swiper.css"> -->
+  <link rel="stylesheet" href="lib/swiper.min.css">
+
+  <script src="config.js"></script>
+
+  <script src="lib/swiper.js"></script>
+  <script src="lib/swiper.min.js"></script>
+  <link rel="stylesheet" href="main.css">
+
+  <!-- annyang -->
+  <script src="//cdnjs.cloudflare.com/ajax/libs/annyang/2.6.0/annyang.min.js"></script>
+
+  <!-- Main -->
+  <link rel="stylesheet" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script async="async" src="main.js"></script>
+
+</head>
+
+<body>
+
+  <div id="main">
+    <!-- Slider main container -->
+    <div class="swiper-container">
+      <!-- Additional required wrapper -->
+      <div class="swiper-wrapper">
+        <!-- Slides -->
+        <div class="swiper-slide"><img src="img/Sun.png"></div>
+        <div class="swiper-slide"><img src="img/Mercury.png"></div>
+        <div class="swiper-slide"><img src="img/Venus.png"></div>
+        <div class="swiper-slide"><img src="img/Earth.png"></div>
+        <div class="swiper-slide"><img src="img/Moon.png"></div>
+        <div class="swiper-slide"><img src="img/Mars.png"></div>
+        <div class="swiper-slide"><img src="img/Jupiter.png"></div>
+        <div class="swiper-slide"><img src="img/Saturn.png"></div>
+        <div class="swiper-slide"><img src="img/Uranus.png"></div>
+        <div class="swiper-slide"><img src="img/Neptune.png"></div>
+        <div class="swiper-slide"><img src="img/Pluto.png"></div>
+      </div>
+      <!-- If we need pagination -->
+      <div class="swiper-pagination"></div>
+
+      <!-- If we need navigation buttons -->
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+
+      <!-- If we need scrollbar -->
+      <!-- <div class="swiper-scrollbar"></div> -->
+    </div>
+
+    <div id='subtitle'>Sun</div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="modal">
+
+      <!-- The Close Button -->
+      <span class="close">&times;</span>
+
+      <!-- Modal Content (The Image) -->
+      <img class="modal-content" id="modal-img">
+
+      <!-- Modal Caption (Image Text) -->
+      <div id="caption">
+        <li id='download'><div>Download</div></li>
+        <li id='delete'><div>Delete</div></li>
+      </div>
+
+      <!-- <i class="fas fa-arrow-alt-circle-down"></i> -->
+    </div>
+
+    <section id='function-container'>
+      <i class="fas fa-keyboard" style="display: none"></i>
+      <!-- <i class="fas fa-camera"></i> -->
+
+      <!-- https://www.flaticon.com/free-icon/microphone_181537 -->
+      <!-- Generator: Adobe Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+      <i id='speaker'>
+        <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+        viewBox="0 0 300 300" style="enable-background:new 0 0 300 300;" xml:space="preserve">
+        <g>
+          <g>
+            <g>
+              <path d="M149.996,0C67.157,0,0.001,67.161,0.001,149.997S67.157,300,149.996,300s150.003-67.163,150.003-150.003
+              S232.835,0,149.996,0z M109.368,100.055c0-21.018,17.1-38.115,38.115-38.115s38.115,17.099,38.115,38.115v45.782
+              c0,21.016-17.1,38.113-38.115,38.113c-21.015,0-38.115-17.1-38.115-38.113V100.055z M209.384,147.282
+              c0,31.662-23.905,57.832-54.613,61.452v20.915h12.802v15.562H126.41v-15.562h12.802v-21.042
+              c-30.231-4.056-53.628-30.003-53.628-61.328v-21.742h15.562v21.742c0,25.549,20.788,46.334,46.337,46.334
+              s46.34-20.788,46.34-46.334v-21.742h15.562C209.384,125.537,209.384,147.282,209.384,147.282z"/>
+              <path d="M147.483,168.391c12.436,0,22.554-10.115,22.554-22.551v-12.991h-45.108v12.991
+              C124.929,158.274,135.047,168.391,147.483,168.391z"/>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </i>
+
+  </section>
+
+</div>
+
+<div id='root' style="visibility: hidden">
+
+  <section id='platform'>Back</section>
+  <section id='tag'>
+    <ul>
+      <li>Direction</li>
+      <li>Altitude</li>
+    </ul>
+  </section>
+  <section id='control'>
+    <ul style='display:flex'>
+      <li>
+        <!-- Control  -->
+        <div id="zone_joystick">
+          <div id="debug">
+            <ul>
+              <li class="position">
+                position :
+                <ul>
+                  <li class="x">x : <span class='data'></span></li>
+                  <li class="y">y : <span class='data'></span></li>
+                </ul>
+              </li>
+              <li class="force">force : <span class='data'></span></li>
+              <li class="pressure">pressure : <span class='data'></span></li>
+              <li class="distance">distance : <span class='data'></span></li>
+              <li class="angle">
+                angle :
+                <ul>
+                  <li class="radian">radian : <span class='data'></span></li>
+                  <li class="degree">degree : <span class='data'></span></li>
+                </ul>
+              </li>
+              <li class="direction">
+                direction :
+                <ul>
+                  <li class="x">x : <span class='data'></span></li>
+                  <li class="y">y : <span class='data'></span></li>
+                  <li class="angle">angle : <span class='data'></span></li>
+                </ul>
+              </li>
+            </ul>
+            <div class="dump"></div>
+          </div>
+          <div class="zone static active"><h1>static</h1></div>
+        </div>
+
+      </li>
+
+
+      <!-- Speed  -->
+      <li id='speedBar'>
+        <i class="fas fa-caret-up"></i>
+        <i class="fas fa-caret-down"></i>
+      </li>
+    </ul>
+  </section>
+</div>
+
+<script>
+var socket = io();
+socket.on('reconnect user', function(destination) {
+  console.log('reconnect')
+  if(sessionStorage.getItem('username')) {
+    socket.emit('reconnect user', sessionStorage.getItem('username'));
+    socket.emit('check user', sessionStorage.getItem('username'));
+  } else {
+    socket.emit('redirect', '/index.html');
+  }
+});
+</script>
+<script  src="client.js"></script>
+<script src='lib/nipplejs.js'></script>
+<script  src="joystick.js"></script>
+<script  src="speech.js"></script>
+
+
+</body>
+</html>

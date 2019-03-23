@@ -57,8 +57,8 @@ function bindNipple() {
     debug(data);
   }).on('end', function(evt, data) {
     socket.emit('latitude end' );
-      dump(evt.type);
-      debug(data);
+    dump(evt.type);
+    debug(data);
 
   }).on('dir:up plain:up dir:left plain:left dir:down ' +
   'plain:down dir:right plain:right',
