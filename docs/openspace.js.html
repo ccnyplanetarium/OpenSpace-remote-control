@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Documentation Source: openspace.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.default.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.cosmo.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top navbar-inverse">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">Documentation</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="ip.html">ip</a></li><li><a href="openspace.html">openspace</a></li><li><a href="socket_server.html">socket_server</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+        
+            <div class="col-sm-3 col-md-3">
+                <form class="navbar-form" role="search">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                        <div class="input-group-btn">
+                            <button class="btn btn-default" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+			
+
+		<h1 class="page-title">Source: openspace.js</h1>
+    
+<section>
+    <article>
+        <pre
+            class="sunlight-highlight-javascript linenums">/**
+* OpenSpace WebSocket related communication method
+* @constructor openspace
+
+* @param {object} setting The configuration object
+
+* @property {object} config The configuration object stored from the parameter
+* @property {library} robot The robotjs library
+* @property {library} ws The WebSocket use to connect OpenSpace backend
+*/
+
+class openspace {
+
+  constructor(setting) {
+
+    var port = setting['port']
+    this.config = setting['config']
+
+    this.robot = require("robotjs");
+    this.init()
+
+    const net = require('net');
+    const WebSocket = require('ws');
+
+    this.ws = new WebSocket('ws://' + 'localhost' + ':' + port);
+
+    this.ws.on('open', (connection) => {
+      console.log('Connected to local OpenSpace server');
+    });
+
+  }
+
+  /**
+  * Function to initial mouse control related (robotjs) variable
+
+  * @property {array-number} mouse The user's mouse x and y position
+  * @property {array-number} altY How many y pixels should mouse increase/decrease while holding right key (zoom in/zoom out)
+  * @property {array-number} latY How many y pixels should mouse increase/decrease while holding left key (rotate up/rotate down)
+  * @property {array-number} latX How many x pixels should mouse increase/decrease while holding left key (rotate left/rotate right)
+  */
+  init() {
+    this.mouse = this.robot.getMousePos();
+    this.altY = 0;
+    this.latY = 0;
+    this.latX = 0;
+  }
+
+  /**
+  * Function to clear mouse control
+
+  * @param {string} type 'alt' / 'lat' / 'all'
+
+  */
+  clear(type) {
+    var x = this.mouse.x,
+    y = this.mouse.y;
+
+    if(type=='alt' || type=='all') {
+      this.robot.mouseToggle("up","right");
+      this.altY = 0;
+
+      if(this.latY>0)
+      y = this.latY + y;
+      if(this.latX>0)
+      x = this.latX + x;
+      this.robot.moveMouse(x, y);
+    }
+
+    if(type=='lat' || type=='all') {
+      this.robot.mouseToggle("up","left");
+
+      this.latX = 0;
+      this.latY = 0;
+      if(this.altY>0)
+      y = this.altY + y;
+      this.robot.moveMouse(x, y);
+    }
+  }
+
+  /**
+  * Function to move altitude (zoom in or zoom out)
+
+  * @param {string} type -1 (zoom out) / 1 (zoom in)
+  * @param {string} value How many pixels should be moved
+
+  */
+  moveAltitude(type,value) {
+    value = value*20
+    if(value>200) value = 200;
+    if(value&lt;-200) value = -200;
+
+    var x = this.mouse.x,
+    y = this.mouse.y;
+
+    this.config.OpenSpaceLog['Altitude'] &amp;&amp; console.log(value)
+
+    this.altY = value;
+    y = y+value + this.latY;
+    x = x + this.latX;
+
+    this.robot.mouseToggle("down","right");
+
+
+    var mouse = this.robot.getMousePos();
+
+    if(mouse.y !=y)
+    this.robot.dragMouse(x, y);
+
+
+  }
+
+  /**
+  * Function to move latitude and longitude (rotation)
+
+  * @param {array-number} msg A array includes {angle,distance}
+
+  * @property {object} msg.angle What is angle triggered on joystick.
+  * @property {library} msg.distance What is distance triggered on joystick.
+
+  */
+  moveGeo(msg) {
+
+    var speed,type,multi,type2,multi2;
+
+    if(msg.angle>=0 &amp;&amp; msg.angle&lt;=90) {
+      this.config.OpenSpaceLog['Geography'] &amp;&amp; console.log('message: latitude- N:' + msg.angle/90 + '- E:' + (90-msg.angle)/90);
+      speed = msg.distance;
+      type = 'N';
+      multi = msg.angle/90;
+      type2 = 'E';
+      multi2 = (90-msg.angle)/90;
+    } else if (msg.angle>=270) {
+      this.config.OpenSpaceLog['Geography'] &amp;&amp; console.log('message: latitude- E:' + (msg.angle - 270)/90 + '- S:' + (360 - msg.angle)/90);
+      speed = msg.distance;
+      type = 'E';
+      multi = (msg.angle - 270)/90;
+      type2 = 'S';
+      multi2 = (360 - msg.angle)/90;
+    } else if (msg.angle>=180 &amp;&amp; msg.angle&lt;=270) {
+      this.config.OpenSpaceLog['Geography'] &amp;&amp; console.log('message: latitude- S:' + (msg.angle - 180)/90 + '- W:' + (270 - msg.angle)/90);
+      speed = msg.distance;
+      type = 'S';
+      multi = (msg.angle - 180)/90;
+      type2 = 'W';
+      multi2 = (270 - msg.angle)/90;
+
+    } else if (msg.angle>=90 &amp;&amp; msg.angle&lt;=180) {
+      this.config.OpenSpaceLog['Geography'] &amp;&amp; console.log('message: latitude- W:' + (msg.angle - 90)/90 + '- N:' + (180 - msg.angle)/90);
+      speed = msg.distance;
+      type = 'W';
+      multi = (msg.angle - 90)/90;
+      type2 = 'N';
+      multi2 = (180 - msg.angle)/90;
+    }
+
+    this.config.OpenSpaceLog['Geography'] &amp;&amp; console.log('message: latitude- ' + msg.distance);
+
+
+    var x = this.mouse.x,
+    y = this.mouse.y,
+    base = 20;
+
+    multi = multi * 10;
+    multi2 = multi2 * 10;
+
+    if(type=='N') {
+      y = y + base*multi
+    } else if(type=='S')  {
+      y = y - base*multi
+    } else if(type=='E') {
+      x = x - base*multi
+    } else if(type=='W')  {
+      x = x + base*multi
+    }
+
+    if(type2=='N') {
+      y = y + base*multi2
+    } else if(type2=='S')  {
+      y = y - base*multi2
+    } else if(type2=='E') {
+      x = x - base*multi2
+    } else if(type2=='W')  {
+      x = x + base*multi2
+    }
+
+
+    this.latY = y - this.mouse.y
+    this.latX = x - this.mouse.x
+
+    y = y+this.altY;
+
+
+    this.robot.mouseToggle("down","left");
+
+    var mouse = this.robot.getMousePos();
+
+    if(mouse.x !=x  || mouse.y !=y)
+    this.robot.dragMouse(x, y);
+
+  }
+
+  /**
+  * Function to screenshot OpenSpace, then send the screenshot to client's device
+
+  * @param {object} setting The configuration object
+
+  */
+  screenshot(setting) {
+
+    var path = setting['OpenSpacePath']
+    var socket = setting['socketObj']
+
+
+    this.trigger('RenderEngine.TakeScreenshot')
+
+    const fs = require('fs');
+
+    var screenshotPath = path,
+    dir,
+    imgName,
+    imgTime = 500;
+    let latestStats = false,
+    latestIndex;
+
+    // Finding the latest folder
+    fs.readdir(screenshotPath,function(err, list){
+      list.forEach(function(file,index){
+        var stats = new Date(fs.statSync(screenshotPath+"/"+file).mtime);
+        this.config.OpenSpaceLog['Screenshot'] &amp;&amp; console.log(index);
+
+        if(!latestStats) {
+          latestStats = stats;
+          latestIndex = index;
+        } else if(latestStats &lt; stats) {
+          latestStats = stats;
+          latestIndex = index;
+        }
+      })
+    })
+
+    // Generating the image
+    setTimeout(
+      function() {
+
+        fs.readdir(screenshotPath,function(err, list){
+          // console.log(latestIndex)
+          // dir = list[list.length-1]
+          dir = list[latestIndex]
+
+          this.config.OpenSpaceLog['Screenshot'] &amp;&amp; console.log(screenshotPath+"/"+dir);
+
+          fs.readdir(screenshotPath+"/"+dir,function(err, list){
+            imgName = list[list.length-1]
+            this.config.OpenSpaceLog['Screenshot'] &amp;&amp; console.log(list[list.length-1]);
+
+
+            // https://stackoverflow.com/questions/26331787/socket-io-node-js-simple-example-to-send-image-files-from-server-to-client
+            fs.readFile(screenshotPath+"/"+dir+"/"+imgName , function(err, buf){
+              // it's possible to embed binary data
+              // within arbitrarily-complex objects
+              socket.emit('image', { image: true, buffer: buf.toString('base64') });
+            });
+
+          })
+
+        })
+
+      },imgTime)
+
+    }
+
+    /**
+    * Function to change OpenSpace current focus planet
+
+    * @param {string} planet The number of planet
+
+    */
+    changePlanet(planet) {
+
+      this.set('NavigationHandler.OrbitalNavigator.Anchor',planet)
+      this.trigger('NavigationHandler.OrbitalNavigator.RetargetAnchor')
+    }
+
+    /**
+    * Function to trigger the api script
+
+    * @param {object} event The api event
+
+    */
+    trigger(event) {
+      this.ws.send(JSON.stringify(
+        {
+          topic: 0,
+          type: 'trigger',
+          payload: {
+            property: event
+          }
+        }
+      ));
+    }
+
+    /**
+    * Function to set the api value
+
+    * @param {object} event The api event
+
+    */
+    set(event,result) {
+      this.ws.send(JSON.stringify(
+        {
+          topic: 0,
+          type: 'set',
+          payload: {
+            property: event, value: result
+          }
+        }
+      ));
+    }
+
+    /**
+    * Function to run lua script
+
+    * @param {object} script The lua script
+
+    */
+    lua(script) {
+      this.ws.send(JSON.stringify(
+        {
+          topic: 0,
+          type: 'luascript',
+          payload: {
+            script
+          }
+        }
+      ));
+    }
+
+  }
+
+  module.exports = function(setting) {
+    return new openspace(setting);
+  }
+</pre>
+    </article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+
+    <div class="modal fade" id="searchResults">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Search results</h4>
+          </div>
+          <div class="modal-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div>
+
+
+<footer>
+
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a>
+	
+		on 2019-04-06T18:35:50-04:00
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+
+    <script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre, pre.prettyprint.source" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			return $( heading ).attr( "id" ) || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            SearcherDisplay.init();
+        });
+    </script>
+
+
+</body>
+</html>

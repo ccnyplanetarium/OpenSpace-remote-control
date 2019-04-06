@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Documentation Source: socket_server.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.default.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.cosmo.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top navbar-inverse">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">Documentation</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="ip.html">ip</a></li><li><a href="openspace.html">openspace</a></li><li><a href="socket_server.html">socket_server</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+        
+            <div class="col-sm-3 col-md-3">
+                <form class="navbar-form" role="search">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                        <div class="input-group-btn">
+                            <button class="btn btn-default" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+			
+
+		<h1 class="page-title">Source: socket_server.js</h1>
+    
+<section>
+    <article>
+        <pre
+            class="sunlight-highlight-javascript linenums">/**
+* OpenSpace WebSocket related communication method
+* @constructor socket_server
+
+* @param {library} io socket.io library
+* @param {object} setting The configuration object
+* @param {library} openspace lib/openspace library
+
+* @property {library} io socket.io library
+* @property {object} config The configuration object stored from the parameter
+* @property {array} userList The list of connected clients
+* @property {array} cameraAccess The list of clients who can access camera
+* @property {array} planetAccess The list of clients who can access planet change
+* @property {array} adminID The socket id of admin
+*/
+class socket_server {
+
+  constructor(io,config,openspace) {
+    this.io = io;
+    this.config = config;
+
+    this.userList = ['undefined'];
+    this.cameraAccess = [config.superUser];
+    this.planetAccess = [config.superUser];
+
+    var socketServer = this;
+
+    var time = new Date();
+
+    var altitudeEvent;
+    var frame = 100
+
+    io.on('connection', function(socket){
+
+      var address = socket.id;
+
+      socket.emit('reconnect user')
+      socketServer.config.SocketLog['connection'] &amp;&amp; console.log('New connection from ' + address);
+
+      /**
+      * Function to create user
+
+      * @param {string} msg The user name
+
+      */
+      socket.on('create user', function(msg){
+
+        if(socketServer.userList.includes(msg)) {
+          socket.emit('alert', "Sorry, this username is already registered!!");
+        } else {
+
+          socketServer.userList.push(msg)
+          socket.username = msg;
+          if(msg==config.superUser) {
+            socketServer.adminID = socket.id
+            socketServer.config.SocketLog['account'] &amp;&amp; console.log('new admin is created!! - ' + msg);
+          } else {
+            socketServer.config.SocketLog['account'] &amp;&amp; console.log('new user is created!! - ' + msg);
+          }
+
+          // https://stackoverflow.com/questions/37690419/not-allowed-to-load-local-resources
+          socket.emit('redirect', "/user.html");
+        }
+
+
+        // socketServer.initAdmin('refresh',socket)
+        socketServer.initAdmin('add',socket)
+
+      });
+
+      /**
+      * Function to change a user's ability to access OpenSpace control
+
+      * @param {array} msg
+      * @param {array} msg.type The event type (add gamepad/remove gamepad)
+      * @param {array} msg.id The user socket id
+
+      */
+      socket.on('access user', function(msg){
+
+        if (!socketServer.checkAccess(socket,' change access')) return
+
+        var username = io.sockets.sockets[msg.id].username
+
+        socketServer.config.SocketLog['account'] &amp;&amp; console.log('access user '+username+', msg: ')
+        socketServer.config.SocketLog['account'] &amp;&amp; console.log(msg)
+
+
+        if(msg.type=='add gamepad') {
+          socketServer.cameraAccess.push(username)
+          // console.log(socketServer.cameraAccess)
+          socketServer.initUser(socket,io,msg.id,'#mainContent','&lt;a href="control.html" class="ui green label">You can access the control&lt;/a>')
+        } else if(msg.type=='remove gamepad') {
+          socketServer.cameraAccess = socketServer.cameraAccess.filter(v => v !== username);
+          socketServer.initUser(socket,io,msg.id,'#mainContent','&lt;a class="ui red label">You CANNOT access the control&lt;/a>')
+          io.to(msg.id).emit('redirect', '/user.html');
+        }
+        // if(msg.type=='add plane') {
+        //   socketServer.planetAccess.push(username)
+        //   console.log(socketServer.planetAccess)
+        //   socketServer.initUser(socket,io,msg.id,'#secContent','&lt;a class="ui green label">You can access planet navigation&lt;/a>')
+        // } else if(msg.type=='remove plane') {
+        //   console.log('removing...')
+        //   socketServer.planetAccess = socketServer.planetAccess.filter(v => v !== username);
+        //   socketServer.initUser(socket,io,msg.id,'#secContent','&lt;a class="ui red label">You CANNOT access planet navigation&lt;/a>')
+        // }
+
+        // socketServer.initAdmin('remove',io.sockets.sockets[msg.id])
+        // socketServer.initAdmin('add',io.sockets.sockets[msg.id])
+      });
+
+      /**
+      * Function to logout a user
+
+      * @param {string} msg The user name
+
+      */
+      socket.on('logout user', function(msg){
+        // https://stackoverflow.com/questions/9792927/javascript-array-search-and-remove-string
+        if(socketServer.userList.includes(msg)) {
+          socketServer.userList = socketServer.userList.filter(v => v !== msg);
+
+          if(socket.username==config.superUser) {
+            socketServer.adminID = false;
+          }
+
+          socket.username = '';
+        }
+      });
+
+      /**
+      * Function to check if a user can access OpenSpace control frontend
+
+      * @param {string} msg The user name
+
+      */
+      socket.on('check user', function(msg){
+        if(!socketServer.cameraAccess.includes(msg))
+        socket.emit('redirect', "/user.html");
+      });
+
+      /**
+      * Function to reconnect a user
+
+      * @param {string} msg The user name
+
+      */
+      socket.on('reconnect user', function(msg){
+
+        if(!socketServer.userList.includes(msg)) {
+          socketServer.userList.push(msg)
+          socket.username = msg;
+          socketServer.config.SocketLog['reconnect'] &amp;&amp; console.log(socket.username + " is reconnected!")
+        }
+
+        if(socket.username==config.superUser) {
+          socketServer.adminID = socket.id
+        }
+
+        if(socketServer.cameraAccess.includes(msg) &amp;&amp; socket.username!=config.superUser) {
+          socket.emit('content setup', {target:'#mainContent',content:'&lt;a href="control.html" class="ui green label">You can access the control&lt;/a>'})
+        } else if (!socketServer.cameraAccess.includes(msg) &amp;&amp; socket.username!=config.superUser) {
+          socket.emit('content setup', {target:'#mainContent',content:'&lt;a class="ui red label">You CANNOT access the control&lt;/a>'})
+        }
+
+        // if(socketServer.planetAccess.includes(msg) &amp;&amp; socket.username!=config.superUser) {
+        //   socket.emit('admin setup', {target:'#secContent',content:'&lt;a class="ui green label">You can access planet naviation&lt;/a>'})
+        // } else if (!socketServer.planetAccess.includes(msg) &amp;&amp; socket.username!=config.superUser) {
+        //   socket.emit('admin setup', {target:'#secContent',content:'&lt;a class="ui red label">You CANNOT access planet naviation&lt;/a>'})
+        // }
+        if(socket.username==config.superUser)
+        socketServer.initAdmin('init')
+
+        socketServer.initAdmin('add',socket)
+      });
+
+      /**
+      * Function to redirect a user
+
+      * @param {string} msg The user name
+
+      */
+      socket.on('redirect', function(msg){
+        socket.emit('redirect', msg);
+      });
+
+      /**
+      * Function to handle OpenSpace alitude start event
+
+      * @param {string} msg 'up' or 'down'
+
+      */
+      socket.on('altitude start', function(msg){
+
+        if (!socketServer.checkAccess(socket,'altitude')) return
+
+        var pressTime = new Date();
+        socketServer.config.OpenSpaceLog['Altitude'] &amp;&amp; console.log('message: altitude start - ' + msg);
+        socketServer.config.OpenSpaceLog['Altitude'] &amp;&amp; console.log('message: moving altitude... - ' + msg);
+
+        var type = (msg=='up') ? true:false
+        var value = (msg=='up') ? -1: 1;
+        openspace.moveAltitude(type,value)
+
+        altitudeEvent = setInterval(function(){
+          var passingTime = new Date();
+          var type = (msg=='up') ? true:false
+
+          var value = (msg=='up') ? -1: 1;
+          value = value+value*(passingTime-pressTime)/500;
+
+          openspace.moveAltitude(type,value)
+          socketServer.config.OpenSpaceLog['Altitude'] &amp;&amp; console.log('message: moving altitude... - ' + msg + '   since last time' + (passingTime-pressTime));
+        }, frame);
+
+      });
+
+      /**
+      * Function to handle OpenSpace alitude end event
+
+      * @param {string} msg 'up' or 'down'
+
+      */
+      socket.on('altitude end', function(msg){
+        socketServer.config.OpenSpaceLog['Altitude'] &amp;&amp; console.log('message: altitude end - ' + msg);
+        clearInterval(altitudeEvent);
+        openspace.clear('alt');
+      });
+
+      /**
+      * Function to handle OpenSpace latitude start event
+
+      */
+      socket.on('latitude start', function(msg){
+
+        socketServer.config.OpenSpaceLog['Geography'] &amp;&amp; console.log('latitude start')
+
+      });
+
+      /**
+      * Function to handle OpenSpace latitude end event
+
+      */
+      socket.on('latitude end', function(msg){
+
+        socketServer.config.OpenSpaceLog['Geography'] &amp;&amp; console.log('latitude end')
+        openspace.clear('lat');
+
+      });
+
+      /**
+      * Function to handle OpenSpace latitude move event
+      @function
+      * @param {array-number} msg A array includes {angle,distance}
+
+      * @property {object} msg.angle What is angle triggered on joystick.
+      * @property {library} msg.distance What is distance triggered on joystick.
+
+      */
+      socket.on('latitude move', function(msg){
+        if (!socketServer.checkAccess(socket,'latitude')) return
+
+        let curTime = new Date();
+
+        if((curTime-time)>frame/2) {
+          time = curTime
+          openspace.moveGeo(msg)
+        }
+
+      });
+
+      /**
+      * Function to handle OpenSpace OpenSpace change planet event
+
+      * @param {string} msg The number of planet
+
+      */
+      socket.on('change planet', function(msg){
+
+        if (!socketServer.checkAccess(socket,'change planet')) return
+
+        socketServer.config.OpenSpaceLog['MovePlanet'] &amp;&amp; console.log('Move to: ' + msg);
+
+        openspace.changePlanet(msg)
+
+        for (var socketId in io.sockets.sockets) {
+          var username = io.sockets.sockets[socketId].username;
+          if(username != config.superUser) {
+            io.to(socketId).emit('wiki',
+            msg
+          );
+        }
+      }
+
+    });
+
+    /**
+    * Function to handle OpenSpace screenshot event
+
+    */
+    socket.on('get img', function(){
+
+      // var address = this.id
+      socketServer.config.SocketLog['account'] &amp;&amp; console.log(address+' request snapshot');
+
+      var setting = {
+        OpenSpacePath: config.OpenSpaceScreenshotPath,
+        socketObj: socket
+      }
+
+      openspace.screenshot(setting)
+
+    });
+
+    /**
+    * Function to receive log from frontend
+
+    */
+    socket.on('console log', function(msg){
+
+      socketServer.config.SocketLog['log'] &amp;&amp; console.log(msg);
+
+    });
+
+
+    // console.log(Object.keys(io.sockets.sockets))
+
+    socket.on('disconnect', function () {
+
+      socketServer.initAdmin('remove',socket)
+
+      // var address = this.id
+      if (socket.username) {
+        socketServer.userList = socketServer.userList.filter(v => v !== socket.username);
+        socketServer.config.SocketLog['disconnect'] &amp;&amp; console.log( socket.username + " disconnected");
+      } else {
+        socketServer.config.SocketLog['disconnect'] &amp;&amp; console.log('socket disconnected before username set');
+      }
+    });
+  });
+}
+
+/**
+* Function to initialize admin frontend content
+
+* @param {string} type 'add' / 'remove' / 'init' / 'refresh'
+* @param {object} socket The socket object
+
+*/
+initAdmin(type,socket) {
+  var config = this.config;
+
+  // var idList = [];
+
+  // for (var socketId in io.sockets.sockets) {
+  //   var username = io.sockets.sockets[socketId].username;
+  //   if(username == config.superUser) {
+  //
+  //     var admin = socketId;
+  //
+  //   } else {
+  // idList.push(socketId)
+  //   }
+  // }
+
+
+  if(type=='add') {
+    var content = '';
+    if(!this.adminID || socket.id==this.adminID || socket.username == undefined)
+    return
+
+    // this.userList = this.userList.filter(v => v !== config.superUser);
+    // for(let i =0; i&lt;idList.length;i++) {
+
+    var event = (this.cameraAccess.includes(socket.username)) ? "active" : ''
+    // var event1 = (this.planetAccess.includes(this.userList[i])) ? "active" : ''
+
+    content+= `&lt;div id="-----`+socket.id+`" class="ui card">
+    &lt;div class="content">`+
+    // &lt;i id="+-+_+`+idList[i]+`" onclick="access(this)" class="right floated paper plane outline icon `+event1+`">&lt;/i>+
+    // &lt;i id="+_+_+`+socket.id+`" onclick="access(this)" class="right floated gamepad icon `+event+`">&lt;/i>+
+    `&lt;div class="header">`+socket.username+`&lt;/div>
+    &lt;div class="description">
+    `+socket.id+`
+    &lt;/div>
+    &lt;/div>
+    &lt;div class="extra content">
+    &lt;span class="left floated gamepad">
+    &lt;i id="_+_+_`+socket.id+`" onclick="access(this)" class="gamepad icon `+event+`">&lt;/i>
+    Joystick
+    &lt;/span>`+
+    // &lt;span class="right floated paper plane outline">
+    // &lt;i id="_+-+_`+idList[i]+`" onclick="access(this)" class="paper plane outline icon `+event1+`">&lt;/i>
+    // Navigation
+    // &lt;/span>
+    `&lt;/div>
+    &lt;/div>
+    `
+    // }
+    this.io.to(this.adminID).emit('content setup',{target:'#cardDeck',content:
+    content,id:'#-----'+socket.id}
+  );
+} else if (type=='remove') {
+  this.io.to(this.adminID).emit('content remove',{target:'#-----'+socket.id});
+
+} else if (type=='init') {
+
+  this.io.to(this.adminID).emit('content replace',{target:'#cardDeck',content:''});
+
+  for (var socketId in this.io.sockets.sockets) {
+    var username =  this.io.sockets.sockets[socketId].username;
+    if(username != config.superUser) {
+
+      this.initAdmin('add',this.io.sockets.sockets[socketId])
+    }
+  }
+
+} else if (type=='refresh') {
+
+  this.io.to(this.adminID).emit('content refresh',{target:'.content .header',target2:'.content .description',username:socket.username,id:socket.id});
+}
+}
+
+/**
+* Function to initialize user frontend content
+
+* @param {object} socket The socket object
+* @param {library} io socket.io library
+* @param {int} id The user id
+* @param {string} target The frontend DOM id
+* @param {string} content The frontend content
+
+*/
+initUser(socket,io,id,target,content) {
+  var config = this.config
+
+  if(socket.username!=config.superUser)
+  return;
+
+  this.io.to(id).emit('content replace',
+  {target:target,content:content}
+);
+}
+
+/**
+* Function to check if a user can access certain control
+
+* @param {object} socket The socket object
+* @param {string} type The type of control
+
+*/
+checkAccess(socket,type) {
+
+  if(!this.cameraAccess.includes(socket.username)) {
+    socket.emit('alert', "Sorry, you are not admin!!");
+    this.config.SocketLog['access'] &amp;&amp; console.log(socket.username+ " is try to "+type)
+    return false;
+  } else {return true}
+}
+
+}
+
+
+module.exports = function(io,config,openspace) {
+  return new socket_server(io,config,openspace);
+}
+</pre>
+    </article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+
+    <div class="modal fade" id="searchResults">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Search results</h4>
+          </div>
+          <div class="modal-body"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div><!-- /.modal-content -->
+      </div><!-- /.modal-dialog -->
+    </div>
+
+
+<footer>
+
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a>
+	
+		on 2019-04-06T18:35:50-04:00
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+
+    <script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre, pre.prettyprint.source" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			return $( heading ).attr( "id" ) || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            SearcherDisplay.init();
+        });
+    </script>
+
+
+</body>
+</html>
