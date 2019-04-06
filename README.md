@@ -6,8 +6,8 @@ This project is based on  [OpensPace Socket api](https://gist.github.com/emiax/b
 ### Note
 
 There are two branches:\
-the **"master"** branch is the code for [OpenSpace](https://www.openspaceproject.com/) Beta–3 Version 0.13.0.\
-the **"websocket"** branch has the newest code, however it only supports the developing version of [Openspace](https://github.com/OpenSpace/OpenSpace), which you need to compile by your own.
+the **"master"** branch has the newest code, however it only supports the developing version of [Openspace](https://github.com/OpenSpace/OpenSpace), which you need to compile by your own.\
+the **"v013"** branch is the code for [OpenSpace](https://www.openspaceproject.com/) Beta–3 Version 0.13.0.
 
 ### Installation & Get Start
 
@@ -21,12 +21,14 @@ $ npm install
 $ npm start
 ```
 
-### Documentation Installation
+### Compile the Documentation
 
 ```sh
 $ cd OpenSpace-remote-control
 $ npm run docs
 ```
 
-### wiki
-For more information, please view the [wiki page](https://github.com/ccnyplanetarium/OpenSpace-remote-control/wiki)
+### Wiki
+For more information, please view the [wiki page](https://github.com/ccnyplanetarium/OpenSpace-remote-control/wiki)\
+or\
+the [documentation page](https://ccnyplanetarium.org/OpenSpace-remote-control)
