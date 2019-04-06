@@ -5,12 +5,15 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "docs": "jsdoc -r lib -c jsdoc/config.json -R jsdoc/index.md -t ./node_modules/ink-docstrap/template -a all -d docs/"
   },
   "author": "Chen Gao",
   "license": "ISC",
   "dependencies": {
     "express": "^4.15.2",
+    "ink-docstrap": "^1.3.2",
+    "jsdoc": "^3.5.5",
     "qrcode": "^1.3.3",
     "robotjs": "^0.5.1",
     "socket.io": "^2.2.0",
