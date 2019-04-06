@@ -48,12 +48,18 @@ var timeoutCreate;
 createNipple('static');
 
 function bindNipple() {
-  joystick.on('start end', function(evt, data) {
+  joystick.on('start', function(evt, data) {
+    socket.emit('latitude start' );
     dump(evt.type);
     debug(data);
   }).on('move', function(evt, data) {
-    socket.emit('latitude', { angle: data.angle.degree, distance: data.distance } );
+    socket.emit('latitude move', { angle: data.angle.degree, distance: data.distance } );
     debug(data);
+  }).on('end', function(evt, data) {
+    socket.emit('latitude end' );
+    dump(evt.type);
+    debug(data);
+
   }).on('dir:up plain:up dir:left plain:left dir:down ' +
   'plain:down dir:right plain:right',
   function(evt, data) {

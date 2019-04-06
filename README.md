@@ -20,3 +20,13 @@ $ cd OpenSpace-remote-control
 $ npm install
 $ npm start
 ```
+
+### Documentation Installation
+
+```sh
+$ cd OpenSpace-remote-control
+$ npm run docs
+```
+
+### wiki
+For more information, please view the [wiki page](https://github.com/ccnyplanetarium/OpenSpace-remote-control/wiki)

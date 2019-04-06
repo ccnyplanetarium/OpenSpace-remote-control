@@ -1,0 +1,42 @@
+i.icon:hover, i.icon.active {
+  cursor: pointer;
+  color: red;
+}
+
+#cardDeck {
+  display: flex;
+flex-wrap: wrap;
+}
+
+.ui.card {
+  margin: 5px;
+}
+
+#index {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  /* https://stackoverflow.com/questions/18061308/prevent-address-bar-hiding-in-mobile-browsers */
+  position:fixed; /* prevent overscroll bounce*/
+  overflow:hidden;
+  -webkit-overflow-scrolling: touch; /* iOS velocity scrolling */
+
+  background-color: #000000;
+  background: url('https://ccnyplanetarium.org/assets/images/hubble-deepfield-dim.jpg');
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#container {
+width: 80%;
+height: 55%;
+top: 50%;
+}
+
+#username {
+      border-radius: 5px 5px 0px 0px;
+      margin-top: 5%;
+}

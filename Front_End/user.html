@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<title>OpenSpace Remote Control</title>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script
+src="https://code.jquery.com/jquery-3.1.1.min.js"
+integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+crossorigin="anonymous"></script>
+<script src="lib/semantic/semantic.min.js"></script>
+<link rel="stylesheet" type="text/css" href="lib/semantic/semantic.min.css">
+<link rel="stylesheet" type="text/css" href="panel.css">
+
+</head>
+
+<body>
+
+<div>
+  <h3 class="ui top attached header">
+    Welcome <a id='username'></a>
+    </h3>
+    <div class="ui attached segment">
+      <div id='mainContent'></div>
+      <div id='cardDeck'></div>
+      <div id='wiki'></div>
+      <div id='secContent'></div>
+    </div>
+    <h3 class="ui bottom attached header">
+      <button type="button" onclick="logout()">Log out</button>
+    </h3>
+</div>
+
+<script>
+  var socket = io();
+  socket.on('reconnect user', function(destination) {
+        console.log('reconnect')
+    if(sessionStorage.getItem('username')) {
+      socket.emit('reconnect user', sessionStorage.getItem('username'));
+        document.querySelector('#username').textContent = sessionStorage.getItem('username');
+    } else {
+          socket.emit('redirect', '/index.html');
+      }
+  });
+</script>
+<script src="client.js"></script>
+
+</body>
+</html>

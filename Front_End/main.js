@@ -1,5 +1,11 @@
-
-var socket = io();
+socket.on('reconnect user', function(destination) {
+  console.log('reconnect')
+  if(sessionStorage.getItem('username')) {
+    socket.emit('reconnect user', sessionStorage.getItem('username'));
+  } else {
+    socket.emit('redirect', '/index.html');
+  }
+});
 
 var mySwiper = new Swiper ('.swiper-container', {
   // Optional parameters
@@ -30,24 +36,25 @@ mySwiper.on('slideChange', function () {
 
 var planet = document.querySelectorAll('.swiper-slide img')
 
-var planetList = [
-  'Sun',
-  'Mercury',
-  'Venus',
-  'Earth',
-  'Moon',
-  'Mars',
-  'Jupiter',
-  'Saturn',
-  'Uranus',
-  'Neptune',
-  'Pluto'
-]
+var planetList = config.planets
+// [
+//   'Sun',
+//   'Mercury',
+//   'Venus',
+//   'Earth',
+//   'Moon',
+//   'Mars',
+//   'Jupiter',
+//   'Saturn',
+//   'Uranus',
+//   'Neptune',
+//   'Pluto'
+// ]
 
 for(let i = 0; i<planet.length; i++) {
   planet[i].onclick = function(){
 
-    socket.emit('chat message', planetList[i-1]); //the trigger is incorrect.. so need -1
+    socket.emit('change planet', planetList[i-1]); //the trigger is incorrect.. so need -1
 
   };
 }
@@ -57,6 +64,8 @@ for(let i = 0; i<planet.length; i++) {
 var modalImg = document.getElementById('modal-img');
 var camera = document.getElementsByClassName('fa-camera')[0];
 var modal = document.getElementById('myModal');
+
+if(camera)
 camera.onclick = function(){
 
   socket.emit('get img');
@@ -74,9 +83,10 @@ var main = document.getElementById('main');
 var root = document.getElementById('root');
 setTimeout(
   function(){
+    keyboard.style.display = ''
     root.style.display = 'none';
     root.style.visibility = 'visible';
-  },1000
+  },2000
 )
 
 
@@ -139,26 +149,16 @@ del.onclick = function() {
 }
 
 
-var speaker = document.getElementById("speaker");
-speaker.onclick = function() {
-  speaker.classList.add('active')
-  setTimeout(
-    function() {
-      speaker.classList.remove('active')
-    }
-    ,3000);
-  }
+var dnload = document.getElementById("download");
 
-  var dnload = document.getElementById("download");
+dnload.onclick = function() {
 
-  dnload.onclick = function() {
+  toDataURL(modalImg.src, function(dataUrl) {
+    var a  = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'image.png';
 
-    toDataURL(modalImg.src, function(dataUrl) {
-      var a  = document.createElement('a');
-      a.href = dataUrl;
-      a.download = 'image.png';
-
-      a.click()
-      console.log('RESULT:', dataUrl)
-    })
-  }
+    a.click()
+    console.log('RESULT:', dataUrl)
+  })
+}
