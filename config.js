@@ -2,6 +2,7 @@ var config = {};
 
 config.superUser = 'admin';
 config.OpenSpaceScreenshotPath = "YOUR PATH to /OpenSpace/screenshots";
+// config.OpenSpaceAutoRunPath = "YOUR PATH to /OpenSpaceWebSocketNavigation/bin/Release/OpenSpace.exe";
 config.OpenSpaceLog = {
   Altitude: false,
   Geography: false,
