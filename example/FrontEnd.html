@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <title>OpenSpace Button Example</title>
+</head>
+<body>
+
+  <button onclick="changePlanet('Moon')">Moon</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io();
+
+    function changePlanet(msg) {
+      socket.emit('set planet', msg);
+    }
+  </script>
+
+</body>
+</html>
